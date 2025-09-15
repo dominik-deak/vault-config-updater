@@ -1,0 +1,14 @@
+{
+  "global": {
+    "environment": "production",
+    "vaultToken": "hvs.final-test-token"
+  },
+  "services": [
+    {
+      "name": "auth-service",
+      "config": {
+        "vaultToken": "hvs.final-test-token"
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "service": "nested-service",
+  "vaultToken": "hvs.final-test-token",
+  "metadata": {
+    "version": "1.0.0"
+  }
+}
