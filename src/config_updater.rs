@@ -74,24 +74,3 @@ pub fn update_vault_tokens_in_files<P: AsRef<Path>>(
 
     stats
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_update_vault_token_basic() {
-        let json = r#"{"vaultToken": "old-token"}"#;
-        let result = update_vault_token(json, "new-token").unwrap();
-        assert!(result.contains("new-token"));
-        assert!(!result.contains("old-token"));
-    }
-
-    #[test]
-    fn test_regex_pattern() {
-        let re = Regex::new(r#""vaultToken"\s*:\s*"[^"]*""#).unwrap();
-        assert!(re.is_match(r#""vaultToken": "test""#));
-        assert!(re.is_match(r#""vaultToken":"test""#));
-        assert!(re.is_match(r#""vaultToken" : "test""#));
-    }
-}

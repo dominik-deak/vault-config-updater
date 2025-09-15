@@ -130,3 +130,24 @@ fn test_handles_file_read_error() {
     let result = update_vault_token_in_file(nonexistent_path, "hvs.new-token");
     assert!(result.is_err());
 }
+
+#[test]
+fn test_regex_pattern_matches_various_formats() {
+    use regex::Regex;
+
+    let re = Regex::new(r#""vaultToken"\s*:\s*"[^"]*""#).unwrap();
+
+    // Test standard format
+    assert!(re.is_match(r#""vaultToken": "test""#));
+
+    // Test format without spaces
+    assert!(re.is_match(r#""vaultToken":"test""#));
+
+    // Test format with extra spaces
+    assert!(re.is_match(r#""vaultToken" : "test""#));
+    assert!(re.is_match(r#""vaultToken"  :  "test""#));
+
+    // Test it doesn't match incomplete patterns
+    assert!(!re.is_match(r#""vaultToken""#));
+    assert!(!re.is_match(r#""notVaultToken": "test""#));
+}

@@ -29,18 +29,3 @@ pub fn find_config_files<P: AsRef<Path>>(search_path: P) -> Result<Vec<PathBuf>>
 
     Ok(config_files)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::Path;
-
-    #[test]
-    fn test_find_config_files_basic() {
-        let test_dir = Path::new("tests/fixtures");
-        if test_dir.exists() {
-            let result = find_config_files(test_dir);
-            assert!(result.is_ok());
-        }
-    }
-}
