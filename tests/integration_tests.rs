@@ -1,6 +1,6 @@
 use std::fs;
 use tempfile::TempDir;
-use vault_config_updater::{find_config_files, update_vault_tokens_in_files};
+use vault_config_updater::{find_config_files, update_vault_tokens_in_files, scan_vault_tokens_in_files};
 
 #[test]
 fn test_end_to_end_workflow() {
@@ -216,4 +216,82 @@ fn test_preserves_json_structure_and_formatting() {
     // Verify basic formatting is preserved (indentation)
     assert!(updated_content.contains("  \"database\""));
     assert!(updated_content.contains("    \"host\""));
+}
+
+#[test]
+fn test_dry_run_end_to_end_workflow() {
+    // Create a temporary directory with test files
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path();
+
+    // Create test config files
+    let config1_path = temp_path.join("config.json");
+    let config1_content = r#"{
+  "database": "localhost",
+  "vaultToken": "hvs.old-token-1",
+  "other": "value"
+}"#;
+    fs::write(&config1_path, config1_content).unwrap();
+
+    let global_config_path = temp_path.join("globalConfig.json");
+    let global_config_content = r#"{
+  "global": {
+    "vaultToken": "hvs.old-token-2"
+  },
+  "service": {
+    "vaultToken": "hvs.old-token-3"
+  }
+}"#;
+    fs::write(&global_config_path, global_config_content).unwrap();
+
+    // Create a nested directory with another config
+    let nested_dir = temp_path.join("nested");
+    fs::create_dir(&nested_dir).unwrap();
+    let nested_config_path = nested_dir.join("config.json");
+    let nested_config_content = r#"{"vaultToken": "hvs.old-token-4"}"#;
+    fs::write(&nested_config_path, nested_config_content).unwrap();
+
+    // Create a config file without tokens
+    let no_token_config_path = temp_path.join("notoken");
+    fs::create_dir(&no_token_config_path).unwrap();
+    let no_token_file_path = no_token_config_path.join("config.json");
+    let no_token_content = r#"{"database": "localhost", "apiKey": "key"}"#;
+    fs::write(&no_token_file_path, no_token_content).unwrap();
+
+    // Store original content to verify no modifications
+    let original_config1 = fs::read_to_string(&config1_path).unwrap();
+    let original_global = fs::read_to_string(&global_config_path).unwrap();
+    let original_nested = fs::read_to_string(&nested_config_path).unwrap();
+    let original_no_token = fs::read_to_string(&no_token_file_path).unwrap();
+
+    // Test the dry-run workflow
+    // 1. Find config files
+    let config_files = find_config_files(temp_path).unwrap();
+    assert_eq!(config_files.len(), 4); // Should find 4 config files
+
+    // 2. Scan tokens in all files (dry-run mode)
+    let stats = scan_vault_tokens_in_files(&config_files);
+
+    // 3. Verify scan results
+    assert_eq!(stats.files_scanned, 4);
+    assert_eq!(stats.files_with_tokens, 3); // 3 files have tokens, 1 doesn't
+    assert_eq!(stats.total_tokens_found, 4); // 1 + 2 + 1 tokens
+    assert!(stats.errors.is_empty());
+
+    // 4. Verify NO files were modified (this is the key test for dry-run)
+    let current_config1 = fs::read_to_string(&config1_path).unwrap();
+    let current_global = fs::read_to_string(&global_config_path).unwrap();
+    let current_nested = fs::read_to_string(&nested_config_path).unwrap();
+    let current_no_token = fs::read_to_string(&no_token_file_path).unwrap();
+
+    assert_eq!(original_config1, current_config1, "config.json was modified!");
+    assert_eq!(original_global, current_global, "globalConfig.json was modified!");
+    assert_eq!(original_nested, current_nested, "nested/config.json was modified!");
+    assert_eq!(original_no_token, current_no_token, "notoken/config.json was modified!");
+
+    // 5. Verify original tokens are still present
+    assert!(current_config1.contains("hvs.old-token-1"));
+    assert!(current_global.contains("hvs.old-token-2"));
+    assert!(current_global.contains("hvs.old-token-3"));
+    assert!(current_nested.contains("hvs.old-token-4"));
 }

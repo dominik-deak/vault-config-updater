@@ -9,7 +9,8 @@ A high-performance, concurrent HashiCorp Vault token updater for configuration f
 - 🔒 **Safe Updates**: Atomic file operations prevent corruption
 - 📄 **Format Preservation**: Maintains original JSON formatting and structure
 - ⌨️ **Flexible Input**: Accept tokens via command line or interactive prompt
-- ✅ **Comprehensive Testing**: 35+ unit and integration tests with 90%+ coverage
+- 🔬 **Dry Run Mode**: Preview changes without modifying files
+- ✅ **Comprehensive Testing**: 40+ unit and integration tests with 90%+ coverage
 - ✨ **Quality Assurance**: Pre-push hooks ensure code quality and security
 
 ## Installation
@@ -58,6 +59,30 @@ Specify a different directory to search:
 vault-config-updater hvs.YOUR_TOKEN /path/to/config/directory
 ```
 
+### Dry Run Mode
+
+Preview what files would be changed without actually modifying them:
+
+```bash
+vault-config-updater --dry-run
+```
+
+Example dry-run output:
+```
+🔍 DRY RUN MODE - No files will be modified
+📁 Found 3 config files that would be updated:
+   • ./app/config.json (1 vaultToken field)
+   • ./services/globalConfig.json (2 vaultToken fields)
+   • ./nested/service/config.json (1 vaultToken field)
+
+📊 Summary:
+   • Files that would be updated: 3
+   • Total tokens that would be replaced: 4
+
+💡 3 files would be updated with new vault tokens!
+🚀 Run without --dry-run to apply these changes.
+```
+
 ### Verbose Output
 
 See detailed information about the update process:
@@ -87,6 +112,14 @@ Example verbose output:
    • Tokens replaced: 4
 
 ✅ Successfully updated vault tokens in 3 files!
+```
+
+### Dry Run with Verbose
+
+Combine dry-run with verbose output for maximum detail:
+
+```bash
+vault-config-updater --dry-run --verbose
 ```
 
 ### Help

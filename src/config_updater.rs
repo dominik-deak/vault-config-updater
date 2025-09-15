@@ -36,6 +36,15 @@ pub struct UpdateStats {
     pub errors: Vec<String>,
 }
 
+/// Statistics about the scan operation (dry-run mode)
+#[derive(Debug, PartialEq, Default)]
+pub struct ScanStats {
+    pub files_scanned: usize,
+    pub files_with_tokens: usize,
+    pub total_tokens_found: usize,
+    pub errors: Vec<String>,
+}
+
 impl UpdateStats {
     pub fn new() -> Self {
         Self::default()
@@ -44,6 +53,47 @@ impl UpdateStats {
     pub fn add_error(&mut self, error: String) {
         self.errors.push(error);
     }
+}
+
+impl ScanStats {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add_error(&mut self, error: String) {
+        self.errors.push(error);
+    }
+}
+
+/// Scans a file for vaultToken fields without modifying it
+pub fn scan_vault_tokens_in_file<P: AsRef<Path>>(file_path: P) -> Result<usize> {
+    let path = file_path.as_ref();
+    let content = fs::read_to_string(path)?;
+    let re = Regex::new(r#""vaultToken"\s*:\s*"[^"]*""#)?;
+    Ok(re.find_iter(&content).count())
+}
+
+/// Scans vault tokens in multiple files and returns statistics
+pub fn scan_vault_tokens_in_files<P: AsRef<Path>>(file_paths: &[P]) -> ScanStats {
+    let mut stats = ScanStats::new();
+
+    for path in file_paths {
+        stats.files_scanned += 1;
+
+        match scan_vault_tokens_in_file(path) {
+            Ok(token_count) => {
+                if token_count > 0 {
+                    stats.files_with_tokens += 1;
+                    stats.total_tokens_found += token_count;
+                }
+            }
+            Err(e) => {
+                stats.add_error(format!("Error scanning {:?}: {}", path.as_ref(), e));
+            }
+        }
+    }
+
+    stats
 }
 
 /// Updates vault tokens in multiple files and returns statistics

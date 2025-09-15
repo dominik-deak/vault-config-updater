@@ -104,3 +104,71 @@ fn test_interactive_mode_detection() {
     let cli = result.unwrap();
     assert!(cli.needs_interactive_input());
 }
+
+#[test]
+fn test_dry_run_flag() {
+    let args = vec!["vault-config-updater", "--dry-run"];
+    let result = CliArgs::try_parse_from(args);
+
+    assert!(result.is_ok());
+    let cli = result.unwrap();
+    assert!(cli.dry_run);
+    assert_eq!(cli.token, None);
+}
+
+#[test]
+fn test_dry_run_with_verbose() {
+    let args = vec!["vault-config-updater", "--dry-run", "--verbose"];
+    let result = CliArgs::try_parse_from(args);
+
+    assert!(result.is_ok());
+    let cli = result.unwrap();
+    assert!(cli.dry_run);
+    assert!(cli.verbose);
+    assert_eq!(cli.token, None);
+}
+
+#[test]
+fn test_dry_run_with_path() {
+    let args = vec!["vault-config-updater", "--dry-run", ".", "/some/path"];
+    let result = CliArgs::try_parse_from(args);
+
+    assert!(result.is_ok());
+    let cli = result.unwrap();
+    assert!(cli.dry_run);
+    assert_eq!(cli.token, Some(".".to_string()));
+    assert_eq!(cli.path, Some("/some/path".to_string()));
+}
+
+#[test]
+fn test_needs_interactive_input_with_dry_run() {
+    let args = vec!["vault-config-updater", "--dry-run"];
+    let result = CliArgs::try_parse_from(args);
+
+    assert!(result.is_ok());
+    let cli = result.unwrap();
+    // Should not need interactive input in dry-run mode
+    assert!(!cli.needs_interactive_input());
+}
+
+#[test]
+fn test_get_token_if_needed_dry_run() {
+    let args = vec!["vault-config-updater", "--dry-run"];
+    let result = CliArgs::try_parse_from(args);
+
+    assert!(result.is_ok());
+    let mut cli = result.unwrap();
+    let token_result = cli.get_token_if_needed().unwrap();
+    assert_eq!(token_result, None);
+}
+
+#[test]
+fn test_get_token_if_needed_normal_mode() {
+    let args = vec!["vault-config-updater", "hvs.test-token"];
+    let result = CliArgs::try_parse_from(args);
+
+    assert!(result.is_ok());
+    let mut cli = result.unwrap();
+    let token_result = cli.get_token_if_needed().unwrap();
+    assert_eq!(token_result, Some("hvs.test-token".to_string()));
+}

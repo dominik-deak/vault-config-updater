@@ -21,6 +21,10 @@ pub struct CliArgs {
     /// Verbose output
     #[arg(short, long)]
     pub verbose: bool,
+
+    /// Dry run mode - show what files would be changed without modifying them
+    #[arg(long)]
+    pub dry_run: bool,
 }
 
 impl CliArgs {
@@ -32,13 +36,17 @@ impl CliArgs {
         }
     }
 
-    /// Check if interactive input is needed (no token provided)
+    /// Check if interactive input is needed (no token provided and not in dry-run mode)
     pub fn needs_interactive_input(&self) -> bool {
-        self.token.is_none()
+        self.token.is_none() && !self.dry_run
     }
 
     /// Get the token, prompting for input if not provided
     pub fn get_token(&mut self) -> Result<String> {
+        if self.dry_run {
+            return Err(anyhow::anyhow!("Token not required in dry-run mode"));
+        }
+
         match &self.token {
             Some(token) => Ok(token.clone()),
             None => {
@@ -57,6 +65,15 @@ impl CliArgs {
                 self.token = Some(token.clone());
                 Ok(token)
             }
+        }
+    }
+
+    /// Get the token if available, returns None in dry-run mode
+    pub fn get_token_if_needed(&mut self) -> Result<Option<String>> {
+        if self.dry_run {
+            Ok(None)
+        } else {
+            Ok(Some(self.get_token()?))
         }
     }
 }
